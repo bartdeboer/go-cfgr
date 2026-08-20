@@ -29,7 +29,6 @@ func TestFragmentRouteWritesFilesAndMergedRouteReadsTheirOverlay(t *testing.T) {
 	cfg.RegisterAdapter("merged-directory", jsonstore.NewReader(mergedDirectory))
 	fragments := cfgr.NewRouteAs[fragmentRouteParams](
 		cfg,
-		"config-fragment",
 		cfgr.WithLocationBuilder(func(params fragmentRouteParams) (string, error) {
 			if params.Name == "" || filepath.Base(params.Name) != params.Name || strings.Contains(params.Name, "..") {
 				return "", errors.New("invalid fragment name")
@@ -39,11 +38,8 @@ func TestFragmentRouteWritesFilesAndMergedRouteReadsTheirOverlay(t *testing.T) {
 	)
 	config := cfgr.NewRoute(
 		cfg,
-		"config",
 		cfgr.WithAdapter[cfgr.NoParams]("merged-directory"),
-		cfgr.WithLocationBuilder(func(cfgr.NoParams) (string, error) {
-			return "config.d", nil
-		}),
+		cfgr.WithLocation("config.d"),
 		cfgr.WithContentsWriteDisabled[cfgr.NoParams](),
 	)
 

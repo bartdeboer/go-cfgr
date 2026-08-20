@@ -32,7 +32,6 @@ func TestPatchCannotProbeContentsWithoutReadAccess(t *testing.T) {
 	cfg := cfgr.New(cfgr.WithDefaultStorage(storage))
 	settings := cfgr.NewRoute(
 		cfg,
-		"settings",
 		cfgr.WithContentsReadAccess(func(context.Context, cfgr.NoParams) (bool, error) {
 			return false, nil
 		}),

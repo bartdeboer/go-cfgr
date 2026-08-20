@@ -11,14 +11,20 @@ type StaticRoute struct {
 	route *Route[NoParams]
 }
 
-// NewRoute creates a static route in cfg's adapter environment. With no options
-// it uses the default adapter, <name>.json, and allows all access.
-func NewRoute(cfg *Router, name string, options ...RouteOption[NoParams]) *StaticRoute {
-	return &StaticRoute{route: NewRouteAs(cfg, name, options...)}
+// WithLocation sets the storage location of a static route.
+func WithLocation(location string) RouteOption[NoParams] {
+	if location == "" {
+		panic("cfgr: location is required")
+	}
+	return WithLocationBuilder(func(NoParams) (string, error) {
+		return location, nil
+	})
 }
 
-func (r *StaticRoute) Name() string {
-	return r.route.Name()
+// NewRoute creates a static route in cfg's adapter environment. With no options
+// it uses the default adapter, config.json, and allows all access.
+func NewRoute(cfg *Router, options ...RouteOption[NoParams]) *StaticRoute {
+	return &StaticRoute{route: NewRouteAs(cfg, options...)}
 }
 
 func (r *StaticRoute) ReadContents(ctx context.Context) ([]byte, error) {

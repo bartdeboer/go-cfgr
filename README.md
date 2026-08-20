@@ -9,16 +9,13 @@ syntax, and persistence.
 ```go
 cfg := cfgr.New()
 
-settings := cfgr.NewRoute(
-    cfg,
-    "settings",
-)
+settings := cfgr.NewRoute(cfg)
 ```
 
 The default route stores JSON in:
 
 ```text
-<current working directory>/settings.json
+<current working directory>/config.json
 ```
 
 Complete contents and JSON Pointer values are both available:
@@ -70,7 +67,6 @@ type SettingsRouteParams struct {
 
 settings := cfgr.NewRouteAs[SettingsRouteParams](
     cfg,
-    "settings",
     cfgr.WithLocationBuilder(func(p SettingsRouteParams) (string, error) {
         if p.GroupID == "" {
             return "", errors.New("group ID is required")
@@ -88,7 +84,7 @@ separate capability hooks because they are separate storage families:
 ```go
 settings := cfgr.NewRouteAs[SettingsRouteParams](
     cfg,
-    "settings",
+    cfgr.WithLocationBuilder(groupSettingsLocation),
     cfgr.WithContentsReadAccess(
         func(ctx context.Context, p SettingsRouteParams) (bool, error) {
             return permissions.CanReadSettingsContents(ctx, p.GroupID)
@@ -110,13 +106,16 @@ decision through `WithValueUnsetAccess` and can be structurally disabled with
 
 Access functions run before the location builder. They must therefore tolerate
 route parameters that have not yet been validated by the location builder.
+Core route errors do not add resolved locations, but storage adapters may include
+their own backend locations in returned errors. Applications should avoid
+exposing untrusted adapter diagnostics without review.
 
 A static route can be made read-only with the same generic option family:
 
 ```go
 settings := cfgr.NewRoute(
     cfg,
-    "settings",
+    cfgr.WithLocation("settings.json"),
     cfgr.WithContentsWriteDisabled[cfgr.NoParams](),
     cfgr.WithValueWriteDisabled[cfgr.NoParams](),
 )
@@ -132,10 +131,10 @@ cfg.RegisterAdapter(
     databaseStorage,
 )
 
-state := cfgr.NewRouteAs[StateRouteParams](
+state := cfgr.NewRoute(
     cfg,
-    "state",
-    cfgr.WithAdapter[StateRouteParams]("state"),
+    cfgr.WithLocation("state.json"),
+    cfgr.WithAdapter[cfgr.NoParams]("state"),
 )
 ```
 
@@ -188,17 +187,13 @@ cfg.RegisterAdapter("merged-directory", json.NewReader(mergedDirectory))
 
 fragments := cfgr.NewRouteAs[FragmentRouteParams](
     cfg,
-    "config-fragment",
     cfgr.WithLocationBuilder(fragmentLocation), // config.d/<name>.json
 )
 
 config := cfgr.NewRoute(
     cfg,
-    "config",
     cfgr.WithAdapter[cfgr.NoParams]("merged-directory"),
-    cfgr.WithLocationBuilder(func(cfgr.NoParams) (string, error) {
-        return "config.d", nil
-    }),
+    cfgr.WithLocation("config.d"),
     cfgr.WithContentsWriteDisabled[cfgr.NoParams](),
 )
 ```

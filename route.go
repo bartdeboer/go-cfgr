@@ -2,6 +2,7 @@ package cfgr
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/bartdeboer/go-cfgr/textpatch"
@@ -16,7 +17,7 @@ type RouteOption[P any] func(*Route[P])
 
 func WithLocationBuilder[P any](build LocationBuilder[P]) RouteOption[P] {
 	if build == nil {
-		panic("cfgr: document assembler is required")
+		panic("cfgr: location builder is required")
 	}
 	return func(route *Route[P]) {
 		route.buildLocation = build
@@ -91,7 +92,6 @@ func WithAdapter[P any](identifier string) RouteOption[P] {
 }
 
 type Route[P any] struct {
-	name                string
 	adapterIdentifier   string
 	adapter             adapter
 	buildLocation       LocationBuilder[P]
@@ -102,22 +102,17 @@ type Route[P any] struct {
 	valueUnsetAccess    ValueAccess[P]
 }
 
-// NewRouteAs creates a named parameterized route in cfg's adapter environment.
-// The caller owns the returned route handle. With no options it uses the
-// default adapter, <name>.json, and allows all access.
-func NewRouteAs[P any](cfg *Router, name string, options ...RouteOption[P]) *Route[P] {
+// NewRouteAs creates a parameterized route in cfg's adapter environment. The
+// caller owns the returned route handle.
+func NewRouteAs[P any](cfg *Router, options ...RouteOption[P]) *Route[P] {
 	if cfg == nil {
 		panic("cfgr: router is required")
 	}
-	if name == "" {
-		panic("cfgr: route name is required")
-	}
 
 	route := &Route[P]{
-		name:              name,
 		adapterIdentifier: cfg.defaultAdapter.name,
 		buildLocation: func(P) (string, error) {
-			return name + ".json", nil
+			return "config.json", nil
 		},
 		contentsReadAccess: func(context.Context, P) (bool, error) {
 			return true, nil
@@ -147,8 +142,6 @@ func NewRouteAs[P any](cfg *Router, name string, options ...RouteOption[P]) *Rou
 	route.adapter = adapter
 	return route
 }
-
-func (r *Route[P]) Name() string { return r.name }
 
 func (r *Route[P]) ReadContents(ctx context.Context, params P) ([]byte, error) {
 	allowed, err := r.contentsReadAccess(ctx, params)
@@ -378,10 +371,10 @@ func (r *Route[P]) typedTarget(ctx context.Context, params P, key string) (Typed
 func (r *Route[P]) location(params P) (string, error) {
 	location, err := r.buildLocation(params)
 	if err != nil {
-		return "", fmt.Errorf("build route %q location: %w", r.name, err)
+		return "", fmt.Errorf("cfgr: build location: %w", err)
 	}
 	if location == "" {
-		return "", fmt.Errorf("build route %q location: empty location", r.name)
+		return "", errors.New("cfgr: build location: empty location")
 	}
 	return location, nil
 }
@@ -390,5 +383,5 @@ func (r *Route[P]) wrap(operation string, err error) error {
 	if err == nil {
 		return nil
 	}
-	return fmt.Errorf("%s for route %q: %w", operation, r.name, err)
+	return fmt.Errorf("cfgr: %s: %w", operation, err)
 }
