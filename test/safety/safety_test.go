@@ -30,7 +30,7 @@ func (s *documentStorage) WriteContents(_ context.Context, _ string, contents []
 func TestPatchCannotProbeContentsWithoutReadAccess(t *testing.T) {
 	storage := &documentStorage{contents: []byte("token: secret\n")}
 	cfg := cfgr.New(cfgr.WithDefaultStorage(storage))
-	settings := cfgr.Register(
+	settings := cfgr.NewRoute(
 		cfg,
 		"settings",
 		cfgr.WithContentsReadAccess(func(context.Context, cfgr.NoParams) (bool, error) {

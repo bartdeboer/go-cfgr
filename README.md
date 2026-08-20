@@ -9,7 +9,7 @@ syntax, and persistence.
 ```go
 cfg := cfgr.New()
 
-settings := cfgr.Register(
+settings := cfgr.NewRoute(
     cfg,
     "settings",
 )
@@ -55,7 +55,7 @@ unambiguously before replacement contents are written. The independent
 patch matching observes existing text, `PatchContents` requires both contents-read
 and contents-write access.
 
-Static routes do not expose route parameters. Use `RegisterAs[P]` when route
+Static routes do not expose route parameters. Use `NewRouteAs[P]` when route
 parameters select the document.
 
 ## Parameterized documents
@@ -68,7 +68,7 @@ type SettingsRouteParams struct {
     GroupID string
 }
 
-settings := cfgr.RegisterAs[SettingsRouteParams](
+settings := cfgr.NewRouteAs[SettingsRouteParams](
     cfg,
     "settings",
     cfgr.WithLocationBuilder(func(p SettingsRouteParams) (string, error) {
@@ -86,7 +86,7 @@ Identity remains consumer-owned in `context.Context`. Contents and values have
 separate capability hooks because they are separate storage families:
 
 ```go
-settings := cfgr.RegisterAs[SettingsRouteParams](
+settings := cfgr.NewRouteAs[SettingsRouteParams](
     cfg,
     "settings",
     cfgr.WithContentsReadAccess(
@@ -114,7 +114,7 @@ route parameters that have not yet been validated by the location builder.
 A static route can be made read-only with the same generic option family:
 
 ```go
-settings := cfgr.Register(
+settings := cfgr.NewRoute(
     cfg,
     "settings",
     cfgr.WithContentsWriteDisabled[cfgr.NoParams](),
@@ -132,7 +132,7 @@ cfg.RegisterAdapter(
     databaseStorage,
 )
 
-state := cfgr.RegisterAs[StateRouteParams](
+state := cfgr.NewRouteAs[StateRouteParams](
     cfg,
     "state",
     cfgr.WithAdapter[StateRouteParams]("state"),
@@ -186,13 +186,13 @@ mergedDirectory, err := jsondir.New(root)
 cfg := cfgr.New(cfgr.WithDefaultStorage(json.New(files)))
 cfg.RegisterAdapter("merged-directory", json.NewReader(mergedDirectory))
 
-fragments := cfgr.RegisterAs[FragmentRouteParams](
+fragments := cfgr.NewRouteAs[FragmentRouteParams](
     cfg,
     "config-fragment",
     cfgr.WithLocationBuilder(fragmentLocation), // config.d/<name>.json
 )
 
-config := cfgr.Register(
+config := cfgr.NewRoute(
     cfg,
     "config",
     cfgr.WithAdapter[cfgr.NoParams]("merged-directory"),

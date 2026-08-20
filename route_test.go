@@ -60,7 +60,7 @@ type settingsRouteParams struct {
 func TestDefaultRouteUsesCWDJSONDocument(t *testing.T) {
 	t.Chdir(t.TempDir())
 	cfg := cfgr.New()
-	settings := cfgr.Register(
+	settings := cfgr.NewRoute(
 		cfg,
 		"settings",
 	)
@@ -104,7 +104,7 @@ func TestCustomDefaultDoesNotInitializeFilesystemStorage(t *testing.T) {
 		"settings.json": []byte(`{"enabled":true}`),
 	}}
 	cfg := cfgr.New(cfgr.WithDefaultStorage(jsonstore.NewReader(storage)))
-	settings := cfgr.Register(cfg, "settings")
+	settings := cfgr.NewRoute(cfg, "settings")
 
 	contents, err := settings.ReadContents(context.Background())
 	if err != nil {
@@ -133,7 +133,7 @@ func TestRouteCanAssembleParameterizedDocuments(t *testing.T) {
 		"groups/red/settings.json": []byte("red settings"),
 	}}
 	cfg := cfgr.New(cfgr.WithDefaultStorage(storage))
-	settings := cfgr.RegisterAs[settingsRouteParams](
+	settings := cfgr.NewRouteAs[settingsRouteParams](
 		cfg,
 		"settings",
 		cfgr.WithLocationBuilder(func(params settingsRouteParams) (string, error) {
@@ -155,7 +155,7 @@ func TestRouteCanPatchContentsWithoutFileAccess(t *testing.T) {
 		"settings.json": []byte("{\n  \"enabled\": false,\n  \"port\": 8080\n}\n"),
 	}}
 	cfg := cfgr.New(cfgr.WithDefaultStorage(jsonstore.New(storage)))
-	settings := cfgr.Register(cfg, "settings")
+	settings := cfgr.NewRoute(cfg, "settings")
 	patch := `*** Begin Patch
 @@
 -  "enabled": false,
@@ -179,7 +179,7 @@ func TestRouteCanUnsetJSONValue(t *testing.T) {
 		"settings.json": []byte(`{"enabled":true,"obsolete":"remove","port":8080}`),
 	}}
 	cfg := cfgr.New(cfgr.WithDefaultStorage(jsonstore.New(storage)))
-	settings := cfgr.Register(cfg, "settings")
+	settings := cfgr.NewRoute(cfg, "settings")
 
 	if err := settings.Unset(context.Background(), "/obsolete"); err != nil {
 		t.Fatal(err)
@@ -198,7 +198,7 @@ func TestValueWriteAndUnsetAccessAreIndependent(t *testing.T) {
 		"settings.json": []byte(`{"enabled":false}`),
 	}}
 	cfg := cfgr.New(cfgr.WithDefaultStorage(jsonstore.New(storage)))
-	settings := cfgr.Register(
+	settings := cfgr.NewRoute(
 		cfg,
 		"settings",
 		cfgr.WithValueUnsetDisabled[cfgr.NoParams](),
@@ -217,7 +217,7 @@ func TestRouteCanSelectRegisteredAdapter(t *testing.T) {
 	stateStorage := &memoryContents{data: map[string][]byte{"state.json": []byte("registered")}}
 	cfg := cfgr.New(cfgr.WithDefaultStorage(defaultStorage))
 	cfg.RegisterAdapter("state", stateStorage)
-	state := cfgr.Register(
+	state := cfgr.NewRoute(
 		cfg,
 		"state",
 		cfgr.WithAdapter[cfgr.NoParams]("state"),
@@ -237,10 +237,10 @@ func TestRouteRejectsUnregisteredAdapter(t *testing.T) {
 
 	defer func() {
 		if recover() == nil {
-			t.Fatal("Register() did not reject an unregistered adapter")
+			t.Fatal("NewRoute() did not reject an unregistered adapter")
 		}
 	}()
-	cfgr.Register(
+	cfgr.NewRoute(
 		cfg,
 		"settings",
 		cfgr.WithAdapter[cfgr.NoParams]("missing"),
@@ -252,7 +252,7 @@ func TestContentsAndValueCapabilitiesAreIndependent(t *testing.T) {
 		"settings.json": []byte(`{"enabled":true}`),
 	}}
 	cfg := cfgr.New(cfgr.WithDefaultStorage(jsonstore.New(files)))
-	settings := cfgr.RegisterAs[settingsRouteParams](
+	settings := cfgr.NewRouteAs[settingsRouteParams](
 		cfg,
 		"settings",
 		cfgr.WithContentsReadAccess(func(context.Context, settingsRouteParams) (bool, error) {
@@ -280,7 +280,7 @@ func TestListFiltersValuesByTheirCapabilities(t *testing.T) {
 		"settings.json": []byte(`{"public":true,"secret":"hidden"}`),
 	}}
 	cfg := cfgr.New(cfgr.WithDefaultStorage(jsonstore.New(files)))
-	settings := cfgr.RegisterAs[settingsRouteParams](
+	settings := cfgr.NewRouteAs[settingsRouteParams](
 		cfg,
 		"settings",
 		cfgr.WithValueReadAccess(func(_ context.Context, _ settingsRouteParams, key string) (bool, error) {
@@ -302,7 +302,7 @@ func TestStaticRouteCanDisableWrites(t *testing.T) {
 		"settings.json": []byte(`{"enabled":true}`),
 	}}
 	cfg := cfgr.New(cfgr.WithDefaultStorage(jsonstore.New(files)))
-	settings := cfgr.Register(
+	settings := cfgr.NewRoute(
 		cfg,
 		"settings",
 		cfgr.WithContentsWriteDisabled[cfgr.NoParams](),
@@ -327,7 +327,7 @@ func TestStaticRouteCanDisableWrites(t *testing.T) {
 func TestValueReadRequiresValueStorage(t *testing.T) {
 	storage := &memoryContents{data: map[string][]byte{"settings.json": []byte(`{}`)}}
 	cfg := cfgr.New(cfgr.WithDefaultStorage(storage))
-	settings := cfgr.RegisterAs[settingsRouteParams](cfg, "settings")
+	settings := cfgr.NewRouteAs[settingsRouteParams](cfg, "settings")
 
 	_, err := settings.Read(context.Background(), settingsRouteParams{}, "/enabled")
 	if !errors.Is(err, cfgr.ErrUnavailable) {

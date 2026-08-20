@@ -27,7 +27,7 @@ func TestFragmentRouteWritesFilesAndMergedRouteReadsTheirOverlay(t *testing.T) {
 	}
 	cfg := cfgr.New(cfgr.WithDefaultStorage(jsonstore.New(files)))
 	cfg.RegisterAdapter("merged-directory", jsonstore.NewReader(mergedDirectory))
-	fragments := cfgr.RegisterAs[fragmentRouteParams](
+	fragments := cfgr.NewRouteAs[fragmentRouteParams](
 		cfg,
 		"config-fragment",
 		cfgr.WithLocationBuilder(func(params fragmentRouteParams) (string, error) {
@@ -37,7 +37,7 @@ func TestFragmentRouteWritesFilesAndMergedRouteReadsTheirOverlay(t *testing.T) {
 			return "config.d/" + params.Name + ".json", nil
 		}),
 	)
-	config := cfgr.Register(
+	config := cfgr.NewRoute(
 		cfg,
 		"config",
 		cfgr.WithAdapter[cfgr.NoParams]("merged-directory"),

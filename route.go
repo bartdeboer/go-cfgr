@@ -102,10 +102,10 @@ type Route[P any] struct {
 	valueUnsetAccess    ValueAccess[P]
 }
 
-// RegisterAs binds a named parameterized route to cfg and returns its typed
-// handle. With no options it uses the default adapter, <name>.json, and allows
-// all access.
-func RegisterAs[P any](cfg *Router, name string, options ...RouteOption[P]) *Route[P] {
+// NewRouteAs creates a named parameterized route in cfg's adapter environment.
+// The caller owns the returned route handle. With no options it uses the
+// default adapter, <name>.json, and allows all access.
+func NewRouteAs[P any](cfg *Router, name string, options ...RouteOption[P]) *Route[P] {
 	if cfg == nil {
 		panic("cfgr: router is required")
 	}

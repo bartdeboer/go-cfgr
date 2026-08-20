@@ -3,7 +3,7 @@ package cfgr
 import "context"
 
 // NoParams is the route parameter type used by static routes. It only needs to
-// be named when passing a parameterless generic option to Register.
+// be named when passing a parameterless generic option to NewRoute.
 type NoParams struct{}
 
 // StaticRoute is a route whose document does not depend on route parameters.
@@ -11,10 +11,10 @@ type StaticRoute struct {
 	route *Route[NoParams]
 }
 
-// Register binds a static route to cfg. With no options it uses the default
-// adapter, <name>.json, and allows all access.
-func Register(cfg *Router, name string, options ...RouteOption[NoParams]) *StaticRoute {
-	return &StaticRoute{route: RegisterAs(cfg, name, options...)}
+// NewRoute creates a static route in cfg's adapter environment. With no options
+// it uses the default adapter, <name>.json, and allows all access.
+func NewRoute(cfg *Router, name string, options ...RouteOption[NoParams]) *StaticRoute {
+	return &StaticRoute{route: NewRouteAs(cfg, name, options...)}
 }
 
 func (r *StaticRoute) Name() string {
